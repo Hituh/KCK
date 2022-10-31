@@ -56,7 +56,7 @@ def init_colors():
     curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
     curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
-def print_menu(window, selected_row_idx):
+def draw_menu(window, selected_row_idx):
     window.clear()
     h, w = window.getmaxyx()
     for idx, row in enumerate(menu):
@@ -114,8 +114,19 @@ def init_status_window():
         STATUS_WINDOW_HEIGHT, STATUS_WINDOW_WIDTH, TITLE_HEIGHT, GAME_WINDOW_WIDTH + 5)
     return window
 
+def draw_scoreboard(window):
+    window.clear()
+    h, w = window.getmaxyx()
+    window.addstr(2, 2, "Top Scores:")
+    window.refresh()
+
 def init_scoreboard_window():
-    
+    window = curses.newwin(GAME_WINDOW_HEIGHT+TITLE_HEIGHT, TITLE_WIDTH, 0, 0)
+    curses.init_pair(25, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    window.nodelay(True)
+    window.keypad(1)
+    return window
+
 def draw_game_window(window):
     """Draw game window"""
 
@@ -233,7 +244,7 @@ if __name__ == "__main__":
             init_colors()
             menu_window = init_main_menu()
             while inmenu:
-                print_menu(menu_window, current_row)
+                draw_menu(menu_window, current_row)
                 draw_menu_title(menu_window)
                 key = menu_window.getch()
                 if key == curses.KEY_UP and current_row > 0:
@@ -301,15 +312,20 @@ if __name__ == "__main__":
                         inscoreboard = True
                         scoreboard_window = init_scoreboard_window()
                         while inscoreboard:
+                            draw_scoreboard(scoreboard_window)
                             key = scoreboard_window.getch()
+
+                            if key == ord("q") or key == 27:
+                                inscoreboard = False
+                                
 
 
                     if current_row == len(menu)-1:
-                        quit_program = True
+                        inprogram = False
                         break
                 elif key == 27:
-                    inmenu = False
-                    quit_program = True
+                    inprogram = False
+                    break
     
     finally:
         curses.endwin()

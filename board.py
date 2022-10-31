@@ -136,7 +136,7 @@ def draw_tetris_title():
         window.addstr(3, 4, "  #    #       #    #  #   #      #", curses.color_pair(i))
         window.addstr(4, 4, "  #    ####    #    #   #  #  ####", curses.color_pair(i))
         window.refresh()
-        time.sleep(0.4)
+        time.sleep(0.2)
 
 def _burn_animation(row):
     # window = curses.newwin(1, BOARD_WIDTH*2 , TITLE_HEIGHT+row+1, LEFT_MARGIN+1)
@@ -170,7 +170,7 @@ class Board:
         self.best_score = None
         self.level = None
 
-    def start(self):
+    def start(self, menulevel):
         """Start game"""
 
         self.board = self._get_new_board()
@@ -182,7 +182,7 @@ class Board:
         self.game_over = False
         self.score = 0
         self.lines = 0
-        self.level = 1
+        self.level = menulevel
         self.best_score = self._read_best_score()
 
         self._place_new_block()
@@ -282,7 +282,6 @@ class Board:
         if tetris == 4:
             draw_tetris_title()
             
-
     def _check_overlapping(self, pos, shape):
         """If current block overlaps any other on the board"""
 
@@ -305,19 +304,27 @@ class Board:
         return not self._check_overlapping(pos, shape)
 
     def _save_best_score(self):
-        """Save best score to file"""
-
-        if self.best_score < self.score:
-            with open(BEST_SCORE_FILE_NAME, "w") as file:
-                file.write(str(self.score))
-
+        X = []
+        """Saves scores to file"""
+        with open (BEST_SCORE_FILE_NAME+".txt", 'a') as file:
+            file.close()
+        with open(BEST_SCORE_FILE_NAME+".txt", "r+") as file:
+            
+            X.append(self.score)
+            for line in file:
+                X.append(int(line))
+            X.sort(reverse=True)
+            file.close()
+        with open (BEST_SCORE_FILE_NAME+".txt", 'w') as file:
+            for i in X:
+                file.write(str(i) + "\n")
+            
     @staticmethod
     def _read_best_score():
         """Read best score from file"""
-
-        if os.path.exists(f"./{BEST_SCORE_FILE_NAME}"):
-            with open(BEST_SCORE_FILE_NAME) as file:
-                return str(file.read())
+        if os.path.exists(f"./{BEST_SCORE_FILE_NAME}.txt"):
+            with open(BEST_SCORE_FILE_NAME+".txt") as file:
+                return int(file.readline())
         return 0
 
     @staticmethod

@@ -10,8 +10,9 @@
 import curses
 import time
 import board
+import os
 
-menu = ['Home', 'Play', 'Scoreboard', 'Exit']
+menu = ['Play', 'Level:', 'Scoreboard', 'Exit']
 
 BOARD_WIDTH = 10
 BOARD_HEIGHT = 20
@@ -31,80 +32,71 @@ LEFT_MARGIN = 3
 
 TITLE_WIDTH = FOOTER_WIDTH = 50
 
+menulevel = 1
+inprogram = True
+inmenu = True
+ingame = False
+inscoreboard = False
+pause = False
+
 
 def init_colors():
     """Init colors"""
 
-    curses.init_pair(99, 8, curses.COLOR_BLACK) # 1 - grey
+    curses.init_pair(99, 8, curses.COLOR_BLACK)  # 1 - grey
     curses.init_pair(98, curses.COLOR_CYAN, curses.COLOR_BLACK)
     curses.init_pair(97, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(96, curses.COLOR_BLACK, curses.COLOR_CYAN)
     curses.init_pair(95, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
     curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_BLUE)
-    curses.init_pair(2, curses.COLOR_BLACK, 13) # 13 - pink
+    curses.init_pair(2, curses.COLOR_BLACK, 13)  # 13 - pink
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_YELLOW)
     curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_GREEN)
     curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_MAGENTA)
     curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
-def print_menu(stdscr, selected_row_idx):
-
-    stdscr.clear()
-    h, w = stdscr.getmaxyx()
+def print_menu(window, selected_row_idx):
+    window.clear()
+    h, w = window.getmaxyx()
     for idx, row in enumerate(menu):
         x = w//2 - len(row)//2
         y = h//2 - len(menu)//2 + idx
         if idx == selected_row_idx:
-            stdscr.attron(curses.color_pair(1))
-            stdscr.addstr(y, x, row)
-            stdscr.attroff(curses.color_pair(1))
+            window.attron(curses.color_pair(25))
+            window.addstr(y, x, row)
+            if row == "Level:":
+                window.addstr(y, x+6, str(menulevel))
+            window.attroff(curses.color_pair(25))
         else:
-            stdscr.addstr(y, x, row)
-    stdscr.refresh()
+            window.addstr(y, x, row)
+            if row == "Level:":
+                window.addstr(y, x+6, str(menulevel))    
+    draw_menu_title(window)           
+    window.refresh()
 
-def main_menu(stdscr):
-    # turn off cursor blinking
-    curses.curs_set(0)
+def draw_menu_title(window):
+    window.addstr(1, 7, "#####  ####  #####  ###    #   ####",
+                  curses.color_pair(98))
+    window.addstr(2, 7, "  #    #       #    #  #      #",
+                  curses.color_pair(98))
+    window.addstr(3, 7, "  #    ###     #    # #    #   ###",
+                  curses.color_pair(98))
+    window.addstr(4, 7, "  #    #       #    #  #   #      #",
+                  curses.color_pair(98))
+    window.addstr(5, 7, "  #    ####    #    #   #  #  ####",
+                  curses.color_pair(98))
+    window.addstr(3, 3, " *", curses.color_pair(97))
+    window.addstr(3, 44, " *", curses.color_pair(97))
+    window.refresh()
 
-    draw_title()
-    # color scheme for selected row
-    curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
-
-    # specify the current selected row
-    current_row = 0
-
-    # print the menu
-    print_menu(stdscr, current_row)
-
-    while 1:
-        key = stdscr.getch()
-
-        if key == curses.KEY_UP and current_row > 0:
-            current_row -= 1
-        elif key == curses.KEY_DOWN and current_row < len(menu)-1:
-            current_row += 1
-        elif key == curses.KEY_ENTER or key in [10, 13]:
-            if current_row == 1:
-                continue
-            print_center(stdscr, "You selected '{}'".format(menu[current_row]))
-
-            # if user selected last row, exit the program
-            if current_row == len(menu)-1:
-                break
-
-        print_menu(stdscr, current_row)
-
-
-
-def print_center(stdscr, text):
-    stdscr.clear()
-    h, w = stdscr.getmaxyx()
-    x = w//2 - len(text)//2
-    y = h//2
-    stdscr.addstr(y, x, text)
-    stdscr.refresh()
-
+def init_main_menu():
+    
+    window = curses.newwin(GAME_WINDOW_HEIGHT+TITLE_HEIGHT, TITLE_WIDTH, 0, 0)
+    curses.init_pair(25, curses.COLOR_BLACK, curses.COLOR_WHITE)
+    window.nodelay(True)
+    window.keypad(1)
+    return window
 
 def init_game_window():
     """Create and return game window"""
@@ -115,14 +107,15 @@ def init_game_window():
 
     return window
 
-
 def init_status_window():
     """Create and return status window"""
 
-    window = curses.newwin(STATUS_WINDOW_HEIGHT, STATUS_WINDOW_WIDTH, TITLE_HEIGHT, GAME_WINDOW_WIDTH + 5)
+    window = curses.newwin(
+        STATUS_WINDOW_HEIGHT, STATUS_WINDOW_WIDTH, TITLE_HEIGHT, GAME_WINDOW_WIDTH + 5)
     return window
 
-
+def init_scoreboard_window():
+    
 def draw_game_window(window):
     """Draw game window"""
 
@@ -143,14 +136,17 @@ def draw_game_window(window):
             if game_board.current_block.shape[a][b] == 1:
                 x = 2 * game_board.current_block_pos[1] + 2 * b + 1
                 y = game_board.current_block_pos[0] + a + 1
-                window.addstr(y, x, "  ", curses.color_pair(game_board.current_block.color))
+                window.addstr(y, x, "  ", curses.color_pair(
+                    game_board.current_block.color))
 
     if game_board.is_game_over():
         go_title = " Game Over "
         ag_title = " Enter - play again "
 
-        window.addstr(int(GAME_WINDOW_HEIGHT*.4), (GAME_WINDOW_WIDTH-len(go_title))//2, go_title, curses.color_pair(95))
-        window.addstr(int(GAME_WINDOW_HEIGHT*.5), (GAME_WINDOW_WIDTH-len(ag_title))//2, ag_title, curses.color_pair(95))
+        window.addstr(int(GAME_WINDOW_HEIGHT*.4), (GAME_WINDOW_WIDTH -
+                      len(go_title))//2, go_title, curses.color_pair(95))
+        window.addstr(int(GAME_WINDOW_HEIGHT*.5), (GAME_WINDOW_WIDTH -
+                      len(ag_title))//2, ag_title, curses.color_pair(95))
 
     if pause:
         p_title = " Pause "
@@ -158,7 +154,6 @@ def draw_game_window(window):
                       curses.color_pair(95))
 
     window.refresh()
-
 
 def draw_status_window(window):
     """Draw status window"""
@@ -182,11 +177,11 @@ def draw_status_window(window):
     for row in range(game_board.next_block.size()[0]):
         for col in range(game_board.next_block.size()[1]):
             if game_board.next_block.shape[row][col] == 1:
-                window.addstr(6 + row, start_col + 2 * col, "  ", curses.color_pair(game_board.next_block.color))
+                window.addstr(6 + row, start_col + 2 * col, "  ",
+                              curses.color_pair(game_board.next_block.color))
 
     window.refresh()
     pass
-
 
 def draw_help_window():
     """Draw help window"""
@@ -204,79 +199,117 @@ def draw_help_window():
 
     window.refresh()
 
-def draw_title():   
+def draw_title():
     """Draw title"""
 
     window = curses.newwin(TITLE_HEIGHT, TITLE_WIDTH, 1, LEFT_MARGIN)
-    window.addstr(0, 4, "#####  ####  #####  ###    #   ####", curses.color_pair(98))
-    window.addstr(1, 4, "  #    #       #    #  #      #", curses.color_pair(98))
-    window.addstr(2, 4, "  #    ###     #    # #    #   ###", curses.color_pair(98))
-    window.addstr(3, 4, "  #    #       #    #  #   #      #", curses.color_pair(98))
-    window.addstr(4, 4, "  #    ####    #    #   #  #  ####", curses.color_pair(98))
+    window.addstr(0, 4, "#####  ####  #####  ###    #   ####",
+                  curses.color_pair(98))
+    window.addstr(1, 4, "  #    #       #    #  #      #",
+                  curses.color_pair(98))
+    window.addstr(2, 4, "  #    ###     #    # #    #   ###",
+                  curses.color_pair(98))
+    window.addstr(3, 4, "  #    #       #    #  #   #      #",
+                  curses.color_pair(98))
+    window.addstr(4, 4, "  #    ####    #    #   #  #  ####",
+                  curses.color_pair(98))
 
     window.addstr(2, 0, " *", curses.color_pair(97))
     window.addstr(2, 41, " *", curses.color_pair(97))
 
     window.refresh()
 
-pause = False
-game_board = board.Board(BOARD_HEIGHT, BOARD_WIDTH)
-game_board.start()
-old_score = game_board.score
-
 if __name__ == "__main__":
+    
     try:
-        scr = curses.initscr()
-        curses.beep()
-        curses.noecho()
-        curses.cbreak()
-        curses.start_color()
-        curses.curs_set(0)
-        init_colors()
-        draw_title()
-        draw_help_window()
-        game_window = init_game_window()
-        status_window = init_status_window()
-        draw_game_window(game_window)
-        draw_status_window(status_window)
-        start = time.time()
-        quit_game = False
-        while not quit_game:
-            key_event = game_window.getch()
-            # hack: redraw it on resize
-            if key_event == curses.KEY_RESIZE:
-                draw_title()
-                draw_help_window()
-                draw_game_window(game_window)
-            if key_event == ord("q"):
-                quit_game = True
-            if not game_board.is_game_over():
-                if not pause:
-                    if time.time() - start >= 1 / game_board.level:
-                        game_board.move_block("down")
+        while inprogram:    
+            current_row = 0
+            scr = curses.initscr()
+            curses.beep()
+            curses.noecho()
+            curses.cbreak()
+            curses.start_color()
+            curses.curs_set(0)
+            init_colors()
+            menu_window = init_main_menu()
+            while inmenu:
+                print_menu(menu_window, current_row)
+                draw_menu_title(menu_window)
+                key = menu_window.getch()
+                if key == curses.KEY_UP and current_row > 0:
+                    current_row -= 1
+                elif key == curses.KEY_DOWN and current_row < len(menu)-1:
+                    current_row += 1
+                elif key == curses.KEY_ENTER or key in [10, 13]:
+                    if current_row == 0:
+                        game_board = board.Board(BOARD_HEIGHT, BOARD_WIDTH)
+                        game_board.start(menulevel)
+                        old_score = game_board.score
+                        ingame = True
+                        menu_window.clear()
+                        menu_window.refresh()
+                        draw_title()
+                        draw_help_window()
+                        game_window = init_game_window()
+                        status_window = init_status_window()
+                        draw_game_window(game_window)
+                        draw_status_window(status_window)
                         start = time.time()
-                    if key_event == curses.KEY_UP:
-                        game_board.rotate_block()
-                    elif key_event == curses.KEY_DOWN:
-                        game_board.move_block("down")
-                    elif key_event == curses.KEY_LEFT:
-                        game_board.move_block("left")
-                    elif key_event == curses.KEY_RIGHT:
-                        game_board.move_block("right")
-                    elif key_event == ord(" "):
-                        game_board.drop()
-                if key_event == ord("p"):
-                    pause = not pause
-                    game_window.nodelay(not pause)
-            else:
-                curses.beep()
-                game_window.nodelay(False)
-                if key_event == ord("\n"):
-                    game_board.start()
-                    game_window.nodelay(True)
-            draw_game_window(game_window)
-            if old_score != game_board.score:
-                draw_status_window(status_window)
-                old_score = game_board.score
+
+                        while ingame:
+                            key_event = game_window.getch()
+                            # hack: redraw it on resize
+                            if key_event == curses.KEY_RESIZE:
+                                draw_title()
+                                draw_help_window()
+                                draw_game_window(game_window)
+                            if key_event == ord("q"):
+                                ingame = False  
+                            if not game_board.is_game_over():
+                                if not pause:
+                                    if time.time() - start >= 1 / game_board.level:
+                                        game_board.move_block("down")
+                                        start = time.time()
+                                    if key_event == curses.KEY_UP:
+                                        game_board.rotate_block()
+                                    elif key_event == curses.KEY_DOWN:
+                                        game_board.move_block("down")
+                                    elif key_event == curses.KEY_LEFT:
+                                        game_board.move_block("left")
+                                    elif key_event == curses.KEY_RIGHT:
+                                        game_board.move_block("right")
+                                    elif key_event == ord(" "):
+                                        game_board.drop()
+                                if key_event == ord("p"):
+                                    pause = not pause
+                                    game_window.nodelay(not pause)
+                            else:
+                                curses.beep()
+                                game_window.nodelay(False)
+                                if key_event == ord("\n"):
+                                    game_board.start(menulevel)
+                                    game_window.nodelay(True)
+                            draw_game_window(game_window)
+                            if old_score != game_board.score:
+                                draw_status_window(status_window)
+                                old_score = game_board.score
+                    if current_row == 1:
+                        menulevel += 1
+                    if current_row == 2:
+                        menu_window.clear()
+                        menu_window.refresh()
+                        inscoreboard = True
+                        scoreboard_window = init_scoreboard_window()
+                        while inscoreboard:
+                            key = scoreboard_window.getch()
+
+
+                    if current_row == len(menu)-1:
+                        quit_program = True
+                        break
+                elif key == 27:
+                    inmenu = False
+                    quit_program = True
+    
     finally:
         curses.endwin()

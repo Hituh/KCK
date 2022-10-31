@@ -29,7 +29,7 @@ STATUS_WINDOW_WIDTH = HELP_WINDOW_WIDTH
 TITLE_HEIGHT = 6
 
 LEFT_MARGIN = 3
-
+BEST_SCORE_FILE_NAME = "best_score"
 TITLE_WIDTH = FOOTER_WIDTH = 50
 
 menulevel = 1
@@ -117,7 +117,23 @@ def init_status_window():
 def draw_scoreboard(window):
     window.clear()
     h, w = window.getmaxyx()
-    window.addstr(2, 2, "Top Scores:")
+    
+    X = []
+    with open(BEST_SCORE_FILE_NAME+".txt", "r+") as file:            
+        for line in file:
+            X.append(line)
+    if len(X) < 9:
+        smaller = len(X)
+    else:
+        smaller = 9
+    h1 = h//2 - smaller
+    w1 = w//2
+    string = "Top Scores:"
+    window.addstr(h1, w1-len(string)//2, string)
+    for i in range(0,smaller):
+        window.addstr(i+h1+2, w1-len(str(i+1))-1, "#" + str(i+1) + " " + X[i])
+    string = "Menu - ESC"
+    window.addstr(smaller+h1+3, w1-len(string)//2, string)
     window.refresh()
 
 def init_scoreboard_window():
@@ -206,7 +222,7 @@ def draw_help_window():
     window.addstr(2, 2, "Drop    - space")
     window.addstr(3, 2, "Rotate  - ↑")
     window.addstr(4, 2, "Pause   - p")
-    window.addstr(5, 2, "Quit    - q")
+    window.addstr(5, 2, "Quit    - ESC")
 
     window.refresh()
 
@@ -224,10 +240,6 @@ def draw_title():
                   curses.color_pair(98))
     window.addstr(4, 4, "  #    ####    #    #   #  #  ####",
                   curses.color_pair(98))
-
-    window.addstr(2, 0, " *", curses.color_pair(97))
-    window.addstr(2, 41, " *", curses.color_pair(97))
-
     window.refresh()
 
 if __name__ == "__main__":
@@ -274,7 +286,7 @@ if __name__ == "__main__":
                                 draw_title()
                                 draw_help_window()
                                 draw_game_window(game_window)
-                            if key_event == ord("q"):
+                            if key_event == 27:
                                 ingame = False  
                             if not game_board.is_game_over():
                                 if not pause:
@@ -315,7 +327,7 @@ if __name__ == "__main__":
                             draw_scoreboard(scoreboard_window)
                             key = scoreboard_window.getch()
 
-                            if key == ord("q") or key == 27:
+                            if key == 27:
                                 inscoreboard = False
                                 
 

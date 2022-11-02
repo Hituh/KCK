@@ -63,7 +63,6 @@
 import math
 import random
 import os
-import datetime
 import curses
 import time
 
@@ -129,7 +128,7 @@ def draw_tetris_title():
     curses.init_pair(7, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLACK)
     for i in range(6,11):
-        window = curses.newwin(TITLE_HEIGHT-1, TITLE_WIDTH, 1, LEFT_MARGIN)
+        window = curses.newwin(TITLE_HEIGHT-1, TITLE_WIDTH-3, 1, 3)
         window.addstr(0, 4, "#####  ####  #####  ###    #   ####", curses.color_pair(i))
         window.addstr(1, 4, "  #    #       #    #  #   #  #", curses.color_pair(i))
         window.addstr(2, 4, "  #    ###     #    # #    #   ###", curses.color_pair(i))

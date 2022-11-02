@@ -12,6 +12,8 @@ import time
 import board
 import os
 
+os.system('mode con: cols=50 lines=28')
+
 menu = ['Play', 'Level:', 'Scoreboard', 'Exit']
 
 BOARD_WIDTH = 10
@@ -58,6 +60,7 @@ def init_colors():
 
 def draw_menu(window, selected_row_idx):
     window.clear()
+    window.border()
     h, w = window.getmaxyx()
     for idx, row in enumerate(menu):
         x = w//2 - len(row)//2
@@ -78,7 +81,7 @@ def draw_menu(window, selected_row_idx):
 def draw_menu_title(window):
     window.addstr(1, 7, "#####  ####  #####  ###    #   ####",
                   curses.color_pair(98))
-    window.addstr(2, 7, "  #    #       #    #  #      #",
+    window.addstr(2, 7, "  #    #       #    #  #   #  #",
                   curses.color_pair(98))
     window.addstr(3, 7, "  #    ###     #    # #    #   ###",
                   curses.color_pair(98))
@@ -86,8 +89,6 @@ def draw_menu_title(window):
                   curses.color_pair(98))
     window.addstr(5, 7, "  #    ####    #    #   #  #  ####",
                   curses.color_pair(98))
-    window.addstr(3, 3, " *", curses.color_pair(97))
-    window.addstr(3, 44, " *", curses.color_pair(97))
     window.refresh()
 
 def init_main_menu():
@@ -116,6 +117,7 @@ def init_status_window():
 
 def draw_scoreboard(window):
     window.clear()
+    
     h, w = window.getmaxyx()
     
     X = []
@@ -134,6 +136,7 @@ def draw_scoreboard(window):
         window.addstr(i+h1+2, w1-len(str(i+1))-1, "#" + str(i+1) + " " + X[i])
     string = "Menu - ESC"
     window.addstr(smaller+h1+3, w1-len(string)//2, string)
+    window.border()
     window.refresh()
 
 def init_scoreboard_window():
@@ -229,10 +232,10 @@ def draw_help_window():
 def draw_title():
     """Draw title"""
 
-    window = curses.newwin(TITLE_HEIGHT, TITLE_WIDTH, 1, LEFT_MARGIN)
+    window = curses.newwin(TITLE_HEIGHT, TITLE_WIDTH-3, 1, 3)
     window.addstr(0, 4, "#####  ####  #####  ###    #   ####",
                   curses.color_pair(98))
-    window.addstr(1, 4, "  #    #       #    #  #      #",
+    window.addstr(1, 4, "  #    #       #    #  #   #  #",
                   curses.color_pair(98))
     window.addstr(2, 4, "  #    ###     #    # #    #   ###",
                   curses.color_pair(98))
@@ -263,6 +266,11 @@ if __name__ == "__main__":
                     current_row -= 1
                 elif key == curses.KEY_DOWN and current_row < len(menu)-1:
                     current_row += 1
+                elif ((key == curses.KEY_LEFT) or (key in [10, 13])) and (current_row == 1):
+                    if menulevel >=2:
+                        menulevel -= 1
+                elif ((key == curses.KEY_RIGHT) or (key in [10, 13])) and (current_row == 1):
+                    menulevel += 1
                 elif key == curses.KEY_ENTER or key in [10, 13]:
                     if current_row == 0:
                         game_board = board.Board(BOARD_HEIGHT, BOARD_WIDTH)
